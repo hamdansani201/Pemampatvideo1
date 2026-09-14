@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pemampat Video — Kecilkan Saiz Video</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+        body { background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 35px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        h1 { text-align: center; color: #0369a1; margin-bottom: 8px; font-size: 22px; }
+        .subtitle { text-align: center; color: #64748b; margin-bottom: 30px; }
+        
+        .upload-box { border: 3px dashed #0ea5e9; border-radius: 12px; padding: 50px 20px; text-align: center; cursor: pointer; transition: all 0.3s; margin-bottom: 25px; }
+        .upload-box:hover, .upload-box.dragover { background: #e0f2fe; border-color: #0284c7; }
+        .icon { font-size: 48px; margin-bottom: 10px; }
+        input[type="file"] { display: none; }
+        
+        .settings { background: #f8fafc; border-radius: 10px; padding: 20px; margin-bottom: 25px; }
+        .settings h3 { color: #1e293b; margin-bottom: 15px; font-size: 16px; }
+        .option { margin-bottom: 12px; }
+        label { display: block; font-weight: 600; color: #475569; margin-bottom: 6px; font-size: 14px; }
+        select, input[type="range"] { width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; }
+        .quality-label { display: flex; justify-content: space-between; font-size: 13px; color: #64748b; margin-top: 5px; }
+        
+        button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-primary { background: linear-gradient(135deg, #0ea5e9, #2563eb); color: white; }
+        .btn-primary:hover { transform: scale(1.01); }
+        .btn-success { background: #16a34a; color: white; margin-top: 10px; }
+        
+        .progress-container { margin-top: 25px; display: none; }
+        .progress-container.show { display: block; }
+        .progress-bar { height: 12px; background: #e2e8f0; border-radius: 6px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #0ea5e9, #22c55e); width: 0%; transition: width 0.3s; border-radius: 6px; }
+        .progress-text { text-align: center; margin-top: 8px; font-size: 14px; color: #475569; font-weight: 500; }
+        
+        .result { margin-top: 25px; padding: 20px; background: #f0fdf4; border-radius: 10px; display: none; }
+        .result.show { display: block; }
+        .result h3 { color: #16a34a; margin-bottom: 10px; font-size: 16px; }
+        .result p { font-size: 14px; color: #374151; margin-bottom: 5px; }
+        .size-info { background: white; padding: 10px; border-radius: 6px; margin: 10px 0; font-family: monospace; font-size: 13px; }
+        
+        .note { margin-top: 20px; padding: 15px; background: #fffbeb; border-radius: 8px; font-size: 13px; color: #92400e; line-height: 1.7; }
+        .file-details { margin-top: 10px; padding: 10px; background: #f1f5f9; border-radius: 6px; display: none; }
+        .file-details.show { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Pemampat Video</h1>
+        <p class="subtitle">Kecilkan saiz video — terus dalam pelayar anda!</p>
+
+        <!-- Kotak Muat Naik -->
+        <div class="upload-box" id="uploadBox">
+            <div class="icon">📹</div>
+            <p id="fileInfo">Klik atau seret video anda di sini</p>
+            <input type="file" id="videoInput" accept="video/*">
+        </div>
+
+        <!-- Butiran Fail -->
+        <div class="file-details" id="fileDetails">
+            <p><strong>Nama:</strong> <span id="fileName">-</span></p>
+            <p><strong>Saiz Asal:</strong> <span id="fileSize">-</span></p>
+            <p><strong>Tempoh:</strong> <span id="fileDuration">-</span></p>
+        </div>
+
+        <!-- Tetapan Kualiti -->
+        <div class="settings">
+            <h3>⚙️ Tetapan Pemampatan</h3>
+            
+            <div class="option">
+                <label>Resolusi Video</label>
+                <select id="resolution">
+                    <option value="original">Asal (Tiada perubahan)</option>
+                    <option value="720" selected>720p (Disyorkan)</option>
+                    <option value="480">480p (Lebih kecil)</option>
+                    <option value="360">360p (Paling kecil)</option>
+                </select>
+            </div>
+            
+            <div class="option">
+                <label>Kualiti: <span id="qualityValue">70%</span></label>
+                <input type="range" id="quality" min="30" max="90" value="70">
+                <div class="quality-label">
+                    <span>Kecil</span>
+                    <span>Seimbang</span>
+                    <span>Jelas</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Butang Proses -->
+        <button class="btn-primary" id="compressBtn" disabled>✨ Mulakan Pemampatan</button>
+
+        <!-- Bar Kemajuan -->
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <p class="progress-text" id="progressText">Sedang memproses... 0%</p>
+        </div>
+
+        <!-- Keputusan & Muat Turun -->
+        <div class="result" id="result">
+            <h3>✅ Siap! Video telah dimampatkan</h3>
+            <div class="size-info">
+                Saiz Asal: <span id="origSize">-</span><br>
+                Saiz Baharu: <span id="newSize">-</span><br>
+                Dikecilkan: <span id="savedSize">-</span>
+            </div>
+            <video id="previewVideo" controls style="width:100%; border-radius:6px; margin:10px 0;"></video>
+            <button class="btn-success" id="downloadBtn">📥 Simpan Video</button>
+        </div>
+
+        <div class="note">
+            <strong>📝 Cara Guna:</strong><br>
+            1. Pilih video anda<br>
+            2. Pilih resolusi & kualiti — 720p disyorkan<br>
+            3. Tekan "Mulakan Pemampatan"<br>
+            4. Tunggu — masa bergantung pada saiz video<br>
+            5. Tekan "Simpan Video" untuk simpan hasilnya<br><br>
+            ⚠️ <em>Nota: Semua pemprosesan berlaku di komputer anda — video tidak dihantar ke internet.</em><br>
+            ⚠️ <em>Untuk video sangat besar (1GB+), mungkin ambil beberapa minit. Jangan tutup tetingkap ya!</em>
+        </div>
+    </div>
+
+    <script>
+        const uploadBox = document.getElementById('uploadBox');
+        const videoInput = document.getElementById('videoInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileDetails = document.getElementById('fileDetails');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const fileDuration = document.getElementById('fileDuration');
+        const resolution = document.getElementById('resolution');
+        const quality = document.getElementById('quality');
+        const qualityValue = document.getElementById('qualityValue');
+        const compressBtn = document.getElementById('compressBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const result = document.getElementById('result');
+        const origSize = document.getElementById('origSize');
+        const newSize = document.getElementById('newSize');
+        const savedSize = document.getElementById('savedSize');
+        const previewVideo = document.getElementById('previewVideo');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        let originalFile = null;
+        let videoDuration = 0;
+
+        // Papar nilai kualiti
+        quality.addEventListener('input', () => {
+            qualityValue.textContent = quality.value + '%';
+        });
+
+        // Klik pilih fail
+        uploadBox.addEventListener('click', () => videoInput.click());
+
+        // Seret & lepas
+        uploadBox.addEventListener('dragover', e => {
+            e.preventDefault();
+            uploadBox.classList.add('dragover');
+        });
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('dragover');
+        });
+        uploadBox.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadBox.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) processSelectedFile(e.dataTransfer.files[0]);
+        });
+
+        // Fail dipilih
+        videoInput.addEventListener('change', e => {
+            if (e.target.files[0]) processSelectedFile(e.target.files[0]);
+        });
+
+        function processSelectedFile(file) {
+            if (!file.type.startsWith('video/')) {
+                alert('Sila pilih fail video sahaja!');
+                return;
+            }
+            
+            originalFile = file;
+            fileInfo.innerHTML = `✅ <strong>${file.name}</strong> — sedia!`;
+            uploadBox.style.borderColor = '#16a34a';
+            uploadBox.style.background = '#f0fdf4';
+            
+            // Papar butiran
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileDetails.classList.add('show');
+            
+            // Dapatkan tempoh video
+            const tempVideo = document.createElement('video');
+            tempVideo.preload = 'metadata';
+            tempVideo.onloadedmetadata = function() {
+                videoDuration = tempVideo.duration;
+                fileDuration.textContent = Math.round(videoDuration / 60) + ' minit ' + Math.round(videoDuration % 60) + ' saat';
+                URL.revokeObjectURL(tempVideo.src);
+            };
+            tempVideo.src = URL.createObjectURL(file);
+            
+            compressBtn.disabled = false;
+            result.classList.remove('show');
+        }
+
+        // Mulakan pemampatan
+        compressBtn.addEventListener('click', async () => {
+            if (!originalFile) return;
+            
+            compressBtn.disabled = true;
+            progressContainer.classList.add('show');
+            result.classList.remove('show');
+            
+            updateProgress(5, 'Sedang menyediakan...');
+            
+            try {
+                const compressedBlob = await compressVideo(originalFile);
+                
+                updateProgress(100, 'Siap!');
+                
+                // Papar keputusan
+                const origBytes = originalFile.size;
+                const newBytes = compressedBlob.size;
+                const percentSaved = ((1 - newBytes / origBytes) * 100).toFixed(1);
+                
+                origSize.textContent = formatFileSize(origBytes);
+                newSize.textContent = formatFileSize(newBytes);
+                savedSize.textContent = percentSaved + '% lebih kecil';
+                
+                // Tunjuk pratonton
+                const videoURL = URL.createObjectURL(compressedBlob);
+                previewVideo.src = videoURL;
+                
+                // Simpan rujukan untuk dimuat turun
+                window.compressedBlob = compressedBlob;
+                
+                result.classList.add('show');
+                result.scrollIntoView({ behavior: 'smooth' });
+                
+            } catch (err) {
+                alert('Ralat: ' + err.message + '\n\nSila cuba guna pelayar Chrome atau Edge ya.');
+                console.error(err);
+            } finally {
+                compressBtn.disabled = false;
+                setTimeout(() => {
+                    progressContainer.classList.remove('show');
+                    progressFill.style.width = '0%';
+                }, 1500);
+            }
+        });
+
+        // Fungsi pemampatan video
+        async function compressVideo(file) {
+            return new Promise((resolve, reject) => {
+                const video = document.createElement('video');
+                video.src = URL.createObjectURL(file);
+                video.muted = true;
+                
+                video.onloadedmetadata = () => {
+                    updateProgress(15, 'Membaca data video...');
+                    
+                    // Dapatkan dimensi asal
+                    let width = video.videoWidth;
+                    let height = video.videoHeight;
+                    const targetRes = parseInt(resolution.value);
+                    const qual = parseInt(quality.value) / 100;
+                    
+                    // Tetapkan tinggi baharu jika perlu
+                    if (targetRes !== 'original' && height > targetRes) {
+                        const ratio = width / height;
+                        height = targetRes;
+                        width = Math.round(targetRes * ratio / 2) * 2; // pastikan genap
+                    }
+                    
+                    updateProgress(25, 'Menyediakan pengekod...');
+                    
+                    // Semak sokongan MediaRecorder
+                    if (!window.MediaRecorder) {
+                        reject(new Error('Pelayar anda tidak menyokong pengekodan video. Sila guna Chrome atau Edge.'));
+                        return;
+                    }
+                    
+                    // Pilih jenis mime yang disokong
+                    let mimeType = 'video/mp4; codecs=avc1.42E01E';
+                    if (!MediaRecorder.isTypeSupported(mimeType)) {
+                        if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) {
+                            mimeType = 'video/webm; codecs=vp9';
+                        } else if (MediaRecorder.isTypeSupported('video/webm')) {
+                            mimeType = 'video/webm';
+                        } else {
+                            mimeType = ''; // guna lalai
+                        }
+                    }
+                    
+                    // Cipta kanvas untuk melukis semula video dengan resolusi baharu
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Anggaran kadar bit
+                    const bitsPerSecond = Math.max(500000, Math.round((width * height * 30 * qual) / 8));
+                    
+                    updateProgress(35, 'Memproses video...');
+                    
+                    const chunks = [];
+                    const recorderOptions = { 
+                        mimeType: mimeType,
+                        videoBitsPerSecond: bitsPerSecond
+                    };
+                    
+                    const recorder = new MediaRecorder(canvas.captureStream(30), recorderOptions);
+                    
+                    recorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) chunks.push(e.data);
+                    };
+                    
+                    recorder.onstop = () => {
+                        updateProgress(100, 'Siap!');
+                        const blob = new Blob(chunks, { type: mimeType || 'video/mp4' });
+                        resolve(blob);
+                    };
+                    
+                    // Masa & kemajuan
+                    const totalFrames = Math.floor(video.duration * 30);
+                    let frameCount = 0;
+                    const startTime = Date.now();
+                    
+                    recorder.start(1000);
+                    video.play();
+                    
+                    // Lukis setiap bingkai ke kanvas & rakam
+                    function drawFrame() {
+                        if (video.ended || video.paused) {
+                            recorder.stop();
+                            return;
+                        }
+                        
+                        ctx.drawImage(video, 0, 0, width, height);
+                        frameCount++;
+                        
+                        // Kemas kini kemajuan
+                        const progress = 35 + Math.round((frameCount / totalFrames) * 60);
+                        updateProgress(Math.min(progress, 95), 'Sedang memproses... ' + Math.min(progress, 95) + '%');
+                        
+                        requestAnimationFrame(drawFrame);
+                    }
+                    
+                    video.addEventListener('seeked', () => {
+                        drawFrame();
+                    });
+                    
+                    video.currentTime = 0;
+                };
+                
+                video.onerror = () => {
+                    reject(new Error('Tidak dapat membaca video'));
+                };
+            });
+        }
+
+        // Butang muat turun
+        downloadBtn.addEventListener('click', () => {
+            if (!window.compressedBlob) return;
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(window.compressedBlob);
+            a.download = 'kecilkan_' + (originalFile?.name || 'video.mp4');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+
+        function updateProgress(percent, text) {
+            progressFill.style.width = percent + '%';
+            progressText.textContent = text;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Byte';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>

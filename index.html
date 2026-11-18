@@ -9,13 +9,13 @@
 <style>
 :root{--navy:#17306b;--gold:#c89b2c;--gold-soft:#f7edd2;--paper:#f4f7fc;--ink:#1b2433;--muted:#5b667a;--line:#d3dbea;--ok:#1f7a4d;--err:#b3261e}
 *{box-sizing:border-box}
-html{scroll-padding-bottom:110px}
-body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;padding-bottom:110px}
+html{scroll-padding-top:70px}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;padding-bottom:0}
 header{background:var(--navy);color:#fff;padding:28px 20px 34px;border-bottom:6px solid var(--gold)}
 header>div{max-width:640px;margin:auto;display:flex;align-items:center;gap:16px}.logo{width:84px;height:84px;flex:none;background:#fff;border-radius:50%;padding:5px;border:3px solid var(--gold)}
 h1{font-size:1.65rem;line-height:1.2;margin:0 0 8px;font-weight:800}
 header p{margin:0;color:#d9e2f7}
-main{max-width:640px;margin:0 auto;padding:8px 16px}
+main{max-width:640px;margin:0 auto;padding:8px 16px 120px}
 fieldset{border:0;margin:24px 0 0;padding:0}
 legend{font-weight:800;font-size:1.15rem;color:var(--navy);padding:0;margin-bottom:10px}
 .hint{color:var(--muted);font-size:.92rem;margin:-4px 0 12px}
@@ -39,11 +39,11 @@ input:focus,select:focus,textarea:focus,.pk:focus-within,.btn:focus-visible,.ste
 .chk input{width:20px;height:20px;margin-top:3px;accent-color:var(--navy);flex:none}
 #fileInfo{font-size:.9rem;color:var(--muted);margin-top:6px}
 #err{color:var(--err);font-weight:600;margin-top:14px;min-height:1.4em}
-.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:3px solid var(--gold);padding:10px 16px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -6px 18px rgba(23,48,107,.12)}
-.bar>div{max-width:640px;margin:auto;display:flex;align-items:center;gap:14px}
+.sum{position:sticky;top:0;z-index:5;background:#fff;border-bottom:3px solid var(--gold);box-shadow:0 4px 14px rgba(23,48,107,.12);padding:8px 16px}
+.sum>div{max-width:640px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .tot small{display:block;color:var(--muted);line-height:1.1}
 .tot b{font-size:1.6rem;color:var(--navy);line-height:1.1}
-.btn{margin-left:auto;background:var(--navy);color:#fff;border:0;border-radius:10px;padding:14px 22px;font:inherit;font-weight:800;cursor:pointer}
+.btn{display:block;width:100%;margin-top:18px;background:var(--navy);color:#fff;border:0;border-radius:10px;padding:16px 22px;font:inherit;font-weight:800;font-size:1.05rem;cursor:pointer}
 .btn:disabled{opacity:.55;cursor:wait}
 #done{display:none;max-width:640px;margin:40px auto;padding:0 20px;text-align:center}
 #done .id{display:inline-block;background:var(--gold-soft);border:1.5px solid var(--gold);border-radius:10px;padding:8px 18px;font-size:1.5rem;font-weight:800;color:var(--navy);margin:10px 0}
@@ -66,6 +66,7 @@ dialog::backdrop{background:rgba(15,25,50,.6)}
 .banks{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .banks a{display:block;text-align:center;padding:10px 6px;border:1.5px solid var(--line);border-radius:8px;color:var(--navy);font-weight:700;text-decoration:none;font-size:.93rem}
 .banks a:hover,.banks a:focus-visible{border-color:var(--gold);background:var(--gold-soft)}
+.cashnote{display:none;background:var(--gold-soft);border-left:4px solid var(--gold);border-radius:6px;padding:10px 12px;margin:-4px 0 14px;font-weight:600}
 .note{color:var(--muted);font-size:.88rem;margin-top:10px}
 @media (max-width:420px){.logo{width:64px;height:64px}h1{font-size:1.35rem}}
 @media (prefers-reduced-motion:no-preference){.pk{transition:background .15s,border-color .15s}}
@@ -79,6 +80,8 @@ dialog::backdrop{background:rgba(15,25,50,.6)}
     <p>Gambar photobooth dan gambar kelas.</p>
   </div>
 </div></header>
+
+<div class="sum" id="bar"><div><div class="tot"><small>Jumlah bayaran</small><b id="total">RM0.00</b></div><small style="color:var(--muted)">Dikira automatik</small></div></div>
 
 <main id="formWrap">
 <form id="f" novalidate>
@@ -96,6 +99,12 @@ dialog::backdrop{background:rgba(15,25,50,.6)}
     <p class="hint">Pilih satu pakej. Setiap pakej termasuk gambar, laminate dan bingkai.</p>
     <div class="free">Percuma: gambar pasport 8 keping dan gambar kelas 6R 1 keping</div>
     <div id="pkgs"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Gambar konvokesyen sahaja (berlaminate, tanpa bingkai)</legend>
+    <p class="hint">Gambar konvokesyen berlaminate tanpa bingkai, mengikut saiz semasa Majlis Anugerah PASTI Kota Samarahan.</p>
+    <div id="konv"></div>
   </fieldset>
 
   <fieldset>
@@ -121,6 +130,7 @@ dialog::backdrop{background:rgba(15,25,50,.6)}
         <option>Tunai</option>
       </select>
     </label>
+    <div class="cashnote" id="cashNote">Untuk bayaran tunai, sila dapatkan resit pembayaran daripada cikgu PASTI masing-masing setelah dibayar. Kemudian muat naik gambar resit tersebut di bawah.</div>
     <label class="f">Muat naik resit pembayaran (gambar atau PDF)
       <input type="file" id="resit" accept="image/*,application/pdf" required>
       <div id="fileInfo"></div>
@@ -130,6 +140,7 @@ dialog::backdrop{background:rgba(15,25,50,.6)}
 
   <label class="chk"><input type="checkbox" id="sah"> Saya mengesahkan maklumat di atas adalah benar dan bayaran telah dibuat.</label>
   <div id="err" role="alert"></div>
+  <button class="btn" id="submit" type="submit">Hantar tempahan</button>
 </form>
 </main>
 
@@ -153,10 +164,6 @@ dialog::backdrop{background:rgba(15,25,50,.6)}
   <p id="doneContact"></p>
 </section>
 
-<div class="bar" id="bar"><div>
-  <div class="tot"><small>Jumlah bayaran</small><b id="total">RM0.00</b></div>
-  <button class="btn" id="submit" type="submit" form="f">Hantar tempahan</button>
-</div></div>
 
 <script>
 /* ===== TETAPAN: ubah di sini ===== */
@@ -185,11 +192,17 @@ const EXTRA = [
   {c:'T4', name:'Gambar 6R', note:'6" × 8"', price:7},
   {c:'T5', name:'Gambar 8R', note:'8" × 12"', price:13}
 ];
+const KONV = [
+  {c:'U1', name:'Gambar konvokesyen 8R', note:'Berlaminate, tanpa bingkai', price:30},
+  {c:'U2', name:'Gambar konvokesyen 11R', note:'Berlaminate, tanpa bingkai', price:40},
+  {c:'U3', name:'Gambar konvokesyen 12R', note:'Berlaminate, tanpa bingkai', price:50},
+  {c:'U4', name:'Gambar konvokesyen 16R', note:'Berlaminate, tanpa bingkai', price:90}
+];
 /* ================================== */
 
 const $ = s => document.querySelector(s);
 const rm = n => 'RM' + (Math.round(n * 100) / 100).toFixed(2).replace(/\.00$/, '.00');
-const qty = {T1:0,T2:0,T3:0,T4:0,T5:0};
+const qty = {T1:0,T2:0,T3:0,T4:0,T5:0,U1:0,U2:0,U3:0,U4:0};
 let receipt = null;
 
 document.querySelectorAll('[data-v]').forEach(el => el.textContent = CONFIG.ACCOUNT[el.dataset.v]);
@@ -213,7 +226,7 @@ function openPay() {
 $('#openPay').addEventListener('click', openPay);
 $('#closePay').addEventListener('click', () => $('#payDlg').close());
 $('#payDlg').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.close(); });
-document.querySelector('[name=kaedah]').addEventListener('change', e => { if (e.target.value === 'Online transfer' && calc() > 0) openPay(); });
+document.querySelector('[name=kaedah]').addEventListener('change', e => { $('#cashNote').style.display = e.target.value === 'Tunai' ? 'block' : 'none'; if (e.target.value === 'Online transfer' && calc() > 0) openPay(); });
 $('#doneContact').textContent = 'Pertanyaan: ' + CONFIG.CONTACT;
 
 function render() {
@@ -223,11 +236,13 @@ function render() {
       <span><b>${p.size}</b><small>gambar + laminate + bingkai</small></span><span class="pr">${rm(p.price)}</span></label>`).join('') + `
     <label class="pk"><input type="radio" name="pakej" value="" ${sel === '' ? 'checked' : ''}>
       <span><b>Tiada pakej</b><small>Saya hanya mahu gambar tambahan</small></span></label>`;
-  $('#extras').innerHTML = EXTRA.map(x => `
+  const row = x => `
     <div class="row"><div><b>${x.name}</b> <span>${rm(x.price)}</span><small>${x.note}</small></div>
       <div class="step"><button type="button" data-c="${x.c}" data-d="-1" aria-label="Kurangkan ${x.name}">−</button>
       <output id="q${x.c}">${qty[x.c]}</output>
-      <button type="button" data-c="${x.c}" data-d="1" aria-label="Tambah ${x.name}">+</button></div></div>`).join('');
+      <button type="button" data-c="${x.c}" data-d="1" aria-label="Tambah ${x.name}">+</button></div></div>`;
+  $('#konv').innerHTML = KONV.map(row).join('');
+  $('#extras').innerHTML = EXTRA.map(row).join('');
   calc();
 }
 
@@ -235,7 +250,7 @@ function calc() {
   const v = (document.querySelector('input[name=pakej]:checked') || {}).value;
   const pk = PKG.find(p => p.c === v);
   let t = pk ? pk.price : 0;
-  EXTRA.forEach(x => t += qty[x.c] * x.price);
+  EXTRA.concat(KONV).forEach(x => t += qty[x.c] * x.price);
   $('#total').textContent = rm(t);
   const amt = document.querySelector('[name=dibayar]');
   if (!amt.dataset.touched) amt.value = t ? t.toFixed(2) : '';
@@ -258,6 +273,7 @@ fetch(CONFIG.SCRIPT_URL).then(r => r.json()).then(d => {
   if (!d.ok) return;
   PKG.forEach(p => { if (d.prices.packages[p.c]) p.price = d.prices.packages[p.c].price; });
   EXTRA.forEach(x => { if (d.prices.extras[x.c]) x.price = d.prices.extras[x.c].price; });
+  KONV.forEach(x => { if (d.prices.konv && d.prices.konv[x.c]) x.price = d.prices.konv[x.c].price; });
   render();
 }).catch(() => {});
 
